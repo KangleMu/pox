@@ -1,6 +1,20 @@
 # EECS557 ReadMe
-...
-
+## Step 1
+Run customed controller.
+First change the directory to pox.
+```
+cd path_of_pox
+```
+Then, run the following
+```
+./pox.py log.level --Debug my.web_stats
+```
+## Step 2
+Open mininet
+```
+sudo mn --topo single,3 --mac --controller remote --switch ovsk
+```
+You can use other topology as well.
 
 
 # POX
