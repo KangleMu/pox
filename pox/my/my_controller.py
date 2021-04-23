@@ -31,12 +31,33 @@ import pox.openflow.libopenflow_01 as of
 from pox.lib.util import dpid_to_str, str_to_dpid
 from pox.lib.util import str_to_bool
 import time
+import csv
 
 # include as part of the betta branch
 from pox.openflow.of_json import *
 
 log = core.getLogger()
 _flood_delay = 0
+
+
+with open('ports_stats.csv', 'w', newline='') as file:
+    header = ['sw',
+              'collisions',
+              'port_no',
+              'rx_bytes',
+              'rx_crc_err',
+              'rx_dropped',
+              'rx_errors',
+              'rx_frame_err',
+              'rx_over_err',
+              'rx_packets',
+              'tx_bytes',
+              'tx_dropped',
+              'tx_errors',
+              'tx_packets']
+    writer = csv.writer(file)
+    writer.writerow(header)
+
 
 class Tutorial(object):
     """
@@ -345,8 +366,30 @@ def _handle_flowstats_received(event):
 # handler to display port statistics received in JSON format
 def _handle_portstats_received(event):
     stats = flow_stats_to_list(event.stats)
+    id = dpidToStr(event.connection.dpid)
+    log.debug(type(stats))
     log.debug("PortStatsReceived from %s: %s",
-              dpidToStr(event.connection.dpid), stats)
+              id, stats)
+    with open('ports_stats.csv', 'a+', newline='') as file:
+        header = ['sw',
+                  'collisions',
+                  'port_no',
+                  'rx_bytes',
+                  'rx_crc_err',
+                  'rx_dropped',
+                  'rx_errors',
+                  'rx_frame_err',
+                  'rx_over_err',
+                  'rx_packets',
+                  'tx_bytes',
+                  'tx_dropped',
+                  'tx_errors',
+                  'tx_packets']
+        writer = csv.DictWriter(file, fieldnames=header)
+        for line in stats:
+            line['sw'] = id
+            writer.writerow(line)
+
 
 
 # main functiont to launch the module
@@ -359,11 +402,10 @@ def launch():
 
     # attach handsers to listners
     core.registerNew(l2_learning, str_to_bool(False), None)
-    # core.openflow.addListenerByName("ConnectionUp", l2_learning)
-    # core.openflow.addListenerByName("FlowStatsReceived",
-    #                                 _handle_flowstats_received)
-    # core.openflow.addListenerByName("PortStatsReceived",
-    #                                 _handle_portstats_received)
+    core.openflow.addListenerByName("FlowStatsReceived",
+                                    _handle_flowstats_received)
+    core.openflow.addListenerByName("PortStatsReceived",
+                                    _handle_portstats_received)
 
     # timer set to execute every five seconds
-    # Timer(5, _timer_func, recurring=True)
+    Timer(10, _timer_func, recurring=True)
